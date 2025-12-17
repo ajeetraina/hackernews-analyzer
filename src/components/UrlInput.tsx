@@ -40,12 +40,20 @@ export function UrlInput({ onSubmit, isLoading }: UrlInputProps) {
           </div>
           
           <Input
-            type="url"
+            type="text"
             placeholder="Paste a Hacker News thread URL..."
             value={url}
             onChange={(e) => setUrl(e.target.value)}
             onFocus={() => setIsFocused(true)}
             onBlur={() => setIsFocused(false)}
+            onKeyDown={(e) => {
+              if (e.key === 'Enter') {
+                e.preventDefault();
+                if (url.trim() && !isLoading) {
+                  onSubmit(url.trim());
+                }
+              }
+            }}
             className="flex-1 h-12 text-lg bg-transparent border-0 focus-visible:ring-0 focus-visible:ring-offset-0 placeholder:text-muted-foreground/50"
             disabled={isLoading}
           />
