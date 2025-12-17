@@ -14,12 +14,14 @@ export default function Index() {
   const [mode, setMode] = useState<AnalysisMode>('executive');
   const [isLoading, setIsLoading] = useState(false);
   const [loadingStep, setLoadingStep] = useState(0);
-  const [result, setResult] = useState<AnalysisResult | null>(null); const [analyzedUrl, setAnalyzedUrl] = useState('');
+  const [result, setResult] = useState<AnalysisResult | null>(null);
+  const [analyzedUrl, setAnalyzedUrl] = useState('');
 
   const handleAnalyze = async (url: string) => {
     setIsLoading(true);
     setLoadingStep(0);
-    setResult(null); setAnalyzedUrl(url);
+    setResult(null);
+    setAnalyzedUrl(url);
 
     // Simulate analysis steps
     await new Promise(r => setTimeout(r, 1000));
