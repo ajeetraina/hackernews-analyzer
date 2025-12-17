@@ -14,12 +14,12 @@ export default function Index() {
   const [mode, setMode] = useState<AnalysisMode>('executive');
   const [isLoading, setIsLoading] = useState(false);
   const [loadingStep, setLoadingStep] = useState(0);
-  const [result, setResult] = useState<AnalysisResult | null>(null);
+  const [result, setResult] = useState<AnalysisResult | null>(null); const [analyzedUrl, setAnalyzedUrl] = useState('');
 
   const handleAnalyze = async (url: string) => {
     setIsLoading(true);
     setLoadingStep(0);
-    setResult(null);
+    setResult(null); setAnalyzedUrl(url);
 
     // Simulate analysis steps
     await new Promise(r => setTimeout(r, 1000));
@@ -92,7 +92,7 @@ export default function Index() {
                   key={m}
                   onClick={() => {
                     setMode(m);
-                    setResult(generateMockAnalysis(m, ''));
+                    setResult(generateMockAnalysis(m, analyzedUrl));
                   }}
                   className={`px-4 py-2 rounded-lg text-sm font-medium whitespace-nowrap transition-all ${
                     mode === m

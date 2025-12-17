@@ -286,10 +286,32 @@ export const mockDebateAnalysis: DebateAnalysis = {
   ],
 };
 
+function extractHnItemId(input: string): string | null {
+  const trimmed = input.trim();
+  if (/^\d+$/.test(trimmed)) return trimmed;
+  const match = trimmed.match(/(?:\?|&)id=(\d+)/);
+  return match?.[1] ?? null;
+}
+
+function buildMockThread(url: string): HNThread {
+  const id = extractHnItemId(url) ?? mockThread.id;
+
+  return {
+    ...mockThread,
+    id,
+    title: `Demo analysis (mock) for HN item ${id}`,
+    author: 'demo',
+    points: 0,
+    commentCount: 0,
+    text: 'Mock data only — enable Cloud to fetch and analyze the real thread.',
+    comments: [],
+  };
+}
+
 export function generateMockAnalysis(mode: string, url: string): AnalysisResult {
   return {
     mode: mode as any,
-    thread: mockThread,
+    thread: buildMockThread(url),
     executive: mode === 'executive' ? mockExecutiveAnalysis : undefined,
     fast: mode === 'fast' ? mockFastAnalysis : undefined,
     submitter: mode === 'submitter' ? mockSubmitterFeedback : undefined,
