@@ -1,12 +1,12 @@
 import type { AnalysisResult, ExecutiveAnalysis, FastAnalysis, SubmitterFeedback, DebateAnalysis, HNThread } from '@/types/analysis';
 
 export const mockThread: HNThread = {
-  id: '38792446',
-  title: 'Show HN: We built an AI code review tool that actually understands context',
-  author: 'techfounder',
-  points: 342,
-  commentCount: 187,
-  text: 'After 2 years of building, we are launching our AI-powered code review tool. It understands your entire codebase context, not just the diff.',
+  id: '0',
+  title: 'Demo analysis (mock) — paste any HN item ID',
+  author: 'demo',
+  points: 0,
+  commentCount: 0,
+  text: 'Mock data only — enable Cloud to fetch and analyze the real thread.',
   comments: [],
 };
 
