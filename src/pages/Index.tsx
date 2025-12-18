@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { MessageSquare, Sparkles } from 'lucide-react';
+import { MessageSquare } from 'lucide-react';
 import { UrlInput } from '@/components/UrlInput';
 import { ModeSelector } from '@/components/ModeSelector';
 import { LoadingState } from '@/components/LoadingState';
@@ -7,7 +7,10 @@ import { ExecutiveView } from '@/components/ExecutiveView';
 import { FastView } from '@/components/FastView';
 import { SubmitterView } from '@/components/SubmitterView';
 import { DebateView } from '@/components/DebateView';
+import { fetchHNThread, parseHNUrl } from '@/lib/hackerNewsApi';
+import { analyzeThread } from '@/lib/aiAnalysis';
 import { generateMockAnalysis } from '@/lib/mockData';
+import { useToast } from '@/hooks/use-toast';
 import type { AnalysisMode, AnalysisResult } from '@/types/analysis';
 
 export default function Index() {
@@ -16,6 +19,8 @@ export default function Index() {
   const [loadingStep, setLoadingStep] = useState(0);
   const [result, setResult] = useState<AnalysisResult | null>(null);
   const [analyzedUrl, setAnalyzedUrl] = useState('');
+  const [useMockData, setUseMockData] = useState(false); // Toggle for testing
+  const { toast } = useToast();
 
   const handleAnalyze = async (url: string) => {
     setIsLoading(true);
@@ -23,17 +28,90 @@ export default function Index() {
     setResult(null);
     setAnalyzedUrl(url);
 
-    // Simulate analysis steps
-    await new Promise(r => setTimeout(r, 1000));
-    setLoadingStep(1);
-    await new Promise(r => setTimeout(r, 1500));
-    setLoadingStep(2);
-    await new Promise(r => setTimeout(r, 1000));
+    try {
+      // Parse the HN URL
+      const itemId = parseHNUrl(url);
+      if (!itemId) {
+        throw new Error('Invalid Hacker News URL. Please provide a valid thread URL.');
+      }
 
-    // Generate mock result
-    const analysisResult = generateMockAnalysis(mode, url);
-    setResult(analysisResult);
-    setIsLoading(false);
+      // Step 1: Fetch thread data
+      setLoadingStep(1);
+      const thread = await fetchHNThread(itemId);
+      
+      await new Promise(r => setTimeout(r, 500)); // Brief pause for UX
+
+      // Step 2: Analyze with AI
+      setLoadingStep(2);
+      
+      let analysisResult: AnalysisResult;
+      
+      if (useMockData) {
+        // Use mock data for testing
+        analysisResult = generateMockAnalysis(mode, url);
+      } else {
+        // Use real AI analysis
+        try {
+          analysisResult = await analyzeThread(thread, mode);
+        } catch (aiError) {
+          // If AI analysis fails, fall back to mock data and notify user
+          console.error('AI analysis failed:', aiError);
+          toast({
+            title: 'Using Mock Data',
+            description: 'AI analysis is not yet configured. Showing mock data instead.',
+            variant: 'default',
+          });
+          analysisResult = generateMockAnalysis(mode, url);
+          analysisResult.thread = thread; // Use real thread data
+        }
+      }
+
+      setResult(analysisResult);
+      
+    } catch (error) {
+      console.error('Analysis error:', error);
+      toast({
+        title: 'Analysis Failed',
+        description: error instanceof Error ? error.message : 'An unexpected error occurred',
+        variant: 'destructive',
+      });
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const handleModeSwitch = async (newMode: AnalysisMode) => {
+    if (!result) return;
+    
+    setMode(newMode);
+    setIsLoading(true);
+    
+    try {
+      let newResult: AnalysisResult;
+      
+      if (useMockData) {
+        newResult = generateMockAnalysis(newMode, analyzedUrl);
+      } else {
+        try {
+          newResult = await analyzeThread(result.thread, newMode);
+        } catch (aiError) {
+          console.error('AI analysis failed:', aiError);
+          newResult = generateMockAnalysis(newMode, analyzedUrl);
+          newResult.thread = result.thread;
+        }
+      }
+      
+      setResult(newResult);
+    } catch (error) {
+      console.error('Mode switch error:', error);
+      toast({
+        title: 'Analysis Failed',
+        description: 'Could not switch analysis mode',
+        variant: 'destructive',
+      });
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   return (
@@ -59,6 +137,21 @@ export default function Index() {
             Transform Hacker News discussions into actionable product insights. 
             AI-powered sentiment analysis, theme extraction, and decision memos.
           </p>
+          
+          {/* Dev toggle for testing */}
+          {import.meta.env.DEV && (
+            <div className="mt-4">
+              <label className="inline-flex items-center gap-2 text-sm text-muted-foreground cursor-pointer">
+                <input
+                  type="checkbox"
+                  checked={useMockData}
+                  onChange={(e) => setUseMockData(e.target.checked)}
+                  className="rounded"
+                />
+                Use mock data (dev only)
+              </label>
+            </div>
+          )}
         </header>
 
         {/* Input Section */}
@@ -92,15 +185,13 @@ export default function Index() {
               {(['executive', 'fast', 'submitter', 'debate'] as AnalysisMode[]).map((m) => (
                 <button
                   key={m}
-                  onClick={() => {
-                    setMode(m);
-                    setResult(generateMockAnalysis(m, analyzedUrl));
-                  }}
+                  onClick={() => handleModeSwitch(m)}
+                  disabled={isLoading}
                   className={`px-4 py-2 rounded-lg text-sm font-medium whitespace-nowrap transition-all ${
                     mode === m
                       ? 'bg-primary text-primary-foreground'
                       : 'glass hover:bg-secondary'
-                  }`}
+                  } ${isLoading ? 'opacity-50 cursor-not-allowed' : ''}`}
                 >
                   {m.charAt(0).toUpperCase() + m.slice(1)}
                 </button>
